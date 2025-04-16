@@ -1,8 +1,9 @@
 import time
 import yaml
+
 import numpy as np
 from core.algorithms.po_algorithm import PerturbObserveMPPT
-from core import PVPanelSimulator
+from core.pv_simulater import PVPanelSimulator
 from analysis.visualizer import SimulationVisualizer
 
 class MPPSimulation:
