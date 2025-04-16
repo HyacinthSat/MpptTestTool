@@ -1,0 +1,30 @@
+# 硬件配置
+hardware:
+  type: simulator  # simulator/raspberry
+  simulator:
+    v_oc: 48.0     # 开路电压(V)
+    i_sc: 10.0     # 短路电流(A)
+
+# 算法配置
+algorithm:
+  type: po         # po/inc
+  po:
+    step_size: 0.02
+    max_voltage: 50.0
+  inc:
+    step_size: 0.015
+    min_voltage: 5.0
+
+# 控制参数
+control:
+  sample_interval_sec: 0.1  # 采样间隔
+
+# 日志配置
+logging:
+  log_dir: ./logs
+  max_file_size_mb: 10      # 日志文件最大尺寸
+
+# 可视化配置
+visualization:
+  enabled: true
+  refresh_rate: 1.0         # 刷新频率(秒)
