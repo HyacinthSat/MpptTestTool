@@ -1,4 +1,3 @@
-# mppt_simulator.py
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -13,7 +12,7 @@ class PVPanel:
         self.irrad = 1000  # 辐照度 (W/m²)
 
     def get_output(self, V):
-        V = np.clip(V, 0, self.Voc)  # 限制电压输入范围
+        V = np.clip(V, 0, self.Voc)
         I = self.Isc * (self.irrad/1000) * (1 - (V/self.Voc))
         return max(I, 0)
     
@@ -28,21 +27,23 @@ class PVPanel:
         plt.subplot(1,2,1)
         plt.plot(V_range, I, 'b-')
         plt.xlabel('Voltage (V)'), plt.ylabel('Current (A)')
+        plt.grid(True)
         
         plt.subplot(1,2,2)
         plt.plot(V_range, P, 'r-')
         plt.xlabel('Voltage (V)'), plt.ylabel('Power (W)')
+        plt.grid(True)
         plt.tight_layout()
+        plt.show(block=False)  # 非阻塞显示
 
 class MPPTController:
     """ P&O MPPT控制器 """
     def __init__(self, step_size=0.5):
-        self.step_size = step_size  # 扰动步长
+        self.step_size = step_size
         self.prev_power = 0
         self.voltage = 30  # 初始电压
 
     def update(self, pv):
-        """ 执行一次MPPT算法迭代 """
         current = pv.get_output(self.voltage)
         power = self.voltage * current
         
@@ -55,30 +56,36 @@ class MPPTController:
         self.prev_power = power
         return self.voltage, current, power
 
-if __name__ == "__main__":
-    # 绘制光伏特性曲线
-    PVPanel.plot_characteristics()
-    
-    # 运行MPPT仿真
+# ---------- 模块级函数 ----------
+def run_simulation(step_size=0.1, iterations=100):
+    """ 运行仿真并返回数据 """
     pv = PVPanel()
-    mppt = MPPTController(step_size=0.1)
+    mppt = MPPTController(step_size=step_size)
     
     voltages, currents, powers = [], [], []
-    for _ in range(100):
+    for _ in range(iterations):
         V, I, P = mppt.update(pv)
         voltages.append(V)
         currents.append(I)
         powers.append(P)
     
-    # 绘制仿真结果
+    return voltages, currents, powers
+
+def plot_simulation_results(voltages, currents, powers):
+    """ 绘制仿真结果 """
     plt.figure("MPPT Simulation Results", figsize=(10,6))
     plt.subplot(3,1,1)
-    plt.plot(voltages, 'b-'), plt.ylabel('Voltage (V)')
+    plt.plot(voltages, 'b-'), plt.ylabel('Voltage (V)'), plt.grid(True)
     plt.subplot(3,1,2)
-    plt.plot(currents, 'r-'), plt.ylabel('Current (A)')
+    plt.plot(currents, 'r-'), plt.ylabel('Current (A)'), plt.grid(True)
     plt.subplot(3,1,3)
-    plt.plot(powers, 'g-'), plt.ylabel('Power (W)'), plt.xlabel('Iterations')
+    plt.plot(powers, 'g-'), plt.ylabel('Power (W)'), plt.xlabel('Iterations'), plt.grid(True)
     plt.tight_layout()
-    
-    # 显示所有窗口
-    plt.show()
+    plt.show(block=False)
+
+# ---------- 主程序 ----------
+if __name__ == "__main__":
+    PVPanel.plot_characteristics()       # 显示光伏特性曲线
+    v, i, p = run_simulation(step_size=0.1)
+    plot_simulation_results(v, i, p)     # 显示仿真结果
+    plt.show()                           # 统一激活窗口
