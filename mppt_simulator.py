@@ -13,23 +13,41 @@ class PVPanel:
         self.irrad = 1000  # 辐照度 (W/m²)
 
     def get_output(self, V):
-        """ 根据输出电压计算电流（简化模型）"""
-        # 简化模型公式：I = Isc - (Isc/Voc) * V
-        I = self.Isc * (self.irrad/1000) - (self.Isc/self.Voc) * V
-        return max(I, 0)  # 电流不能为负
+        V = np.clip(V, 0, self.Voc)  # 限制电压输入范围
+        I = self.Isc * (self.irrad/1000) * (1 - (V/self.Voc))
+        return max(I, 0)
+    
+    # 在PVPanel类中添加静态方法
+    @staticmethod
+    def plot_characteristics():
+        pv = PVPanel()
+        V_range = np.linspace(0, pv.Voc, 100)
+        I = [pv.get_output(V) for V in V_range]
+        P = [V * i for V, i in zip(V_range, I)]
+        
+        plt.figure(figsize=(10,4))
+        plt.subplot(1,2,1)
+        plt.plot(V_range, I, 'b-')
+        plt.xlabel('Voltage (V)'), plt.ylabel('Current (A)')
+        
+        plt.subplot(1,2,2)
+        plt.plot(V_range, P, 'r-')
+        plt.xlabel('Voltage (V)'), plt.ylabel('Power (W)')
+        plt.tight_layout()
+        plt.show()
 
 class MPPTController:
     """ P&O MPPT控制器 """
     def __init__(self, step_size=0.5):
         self.step_size = step_size  # 扰动步长
         self.prev_power = 0
-        self.voltage = 0  # 初始电压
+        self.voltage = 30  # 初始电压
 
     def update(self, pv):
         """ 执行一次MPPT算法迭代 """
         current = pv.get_output(self.voltage)
         power = self.voltage * current
-        self.voltage = np.clip(self.voltage, 0, pv.Voc)  # 限制电压在 [0, Voc]
+         # 限制电压在 [0, Voc]
         
         # 修改后的扰动逻辑
         if power > self.prev_power:
@@ -37,13 +55,17 @@ class MPPTController:
         else:
             self.voltage -= self.step_size  # 仅回退一步（原代码反向扰动幅度过大）
         
+        self.voltage = np.clip(self.voltage, 0, pv.Voc) 
         self.prev_power = power
         return self.voltage, current, power
 
 # 仿真运行
 if __name__ == "__main__":
+    PVPanel.plot_characteristics()
+    plt.show(block=False)  # 显示特性曲线
+
     pv = PVPanel()
-    mppt = MPPTController()
+    mppt = MPPTController(step_size=0.1)
     
     # 存储仿真数据
     voltages = []
@@ -52,6 +74,7 @@ if __name__ == "__main__":
     
     # 运行100次迭代
     for _ in range(100):
+        
         V, I, P = mppt.update(pv)
         voltages.append(V)
         currents.append(I)
